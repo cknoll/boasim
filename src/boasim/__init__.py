@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
 
+# this try-except clause is necessary during installation
 try:
     from .core import *
+    from .blocks import *
+
 except ImportError:
-    # this might be relevant during the installation process
     pass
 
 from .release import __version__
