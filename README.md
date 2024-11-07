@@ -15,3 +15,10 @@ Please ask the authors.
 ### Development Version
 
 `pip install https://github.com/cknoll/boasim/archive/develop.zip`
+
+
+## Test Local Installation
+
+- `boasim --version`
+
+- `python -m unittest`
