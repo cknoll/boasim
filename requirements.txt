@@ -1,2 +1,2 @@
+pyblocksim>=0.3.3
 ipydex
-pyblocksim

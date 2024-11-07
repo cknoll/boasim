@@ -1,10 +1,16 @@
+from .release import __version__
 
-# this try-except clause is necessary during installation
+# the package is imported during installation (to obtain the version)
+# however installation happens in an isolated build environment
+# where no dependencies are installed.
+
 try:
     from .core import *
     from .blocks import *
-
 except ImportError:
-    pass
-
-from .release import __version__
+    import os
+    if "PIP_BUILD_TRACKER" in os.environ:
+        pass
+    else:
+        # raise the original exception
+        raise
