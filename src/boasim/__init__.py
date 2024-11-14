@@ -5,6 +5,8 @@ from .release import __version__
 # where no dependencies are installed.
 
 try:
+    from . import core
+    from . import blocks
     from .core import *
     from .blocks import *
 except ImportError:

@@ -575,7 +575,6 @@ class dtAkrinor(new_TDBlock(5 + N_akrinor_counters*2), CounterBlockMixin):
     def output(self):
         return self.x1
 
-
 N_propofol_counters = 3
 class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin, MaxBlockMixin):
     """
@@ -597,6 +596,9 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
         self.counter_states = self.state_vars[len(self.state_vars)-3*N_propofol_counters:]
 
         self.n_counters = N_propofol_counters
+
+        # this is set via the params-mechanism of TDBlock
+        assert isinstance(self.reference_bp, (int, float))
 
         # Note: counter is used both for effect and sensitivity
         self.T_counter = 6
@@ -657,9 +659,10 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
         # the counter-loop
         # Explanation: For counter index i `self.counter_states[2*i]` is the counter value
         # and `self.counter_states[2*i + 1]` is the associated amplitude value.
-        # The amplitude depends on current input (`self.u1`) and current sensitivity (`x2`)
+        # The bis amplitude depends on current input (`self.u1`) and current sensitivity (`x2`)
         new_bis_amplitude = self.propofol_bolus_static_values(self.u1 * x2_sensitivity)*self.u2
-        new_bp_amplitude = self.propofol_bolus_static_values(self.u1)*self.u2 * 0.5
+        new_bp_amplitude = self.propofol_bolus_static_values(self.u1)*self.reference_bp * 0.5
+        # new_bp_amplitude = 10 + self.u1
 
         # it is mostly 0, except when there is a nonzero input
 
@@ -684,11 +687,14 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
 
             # calculate the BP amplitude (`new_counter_states[3*i + 2]`)
             current_bp_amplitude = self.counter_states[3*i + 2]
+
+            # TODO: check this
             new_counter_states[3*i + 2] = sp.Piecewise(
                 (new_bp_amplitude, eq(i, x4_counter_idx)), (0,  eq(current_counter, 0)), (current_bp_amplitude, True)
             )
 
-            partial_bp_effects[i] = self._single_dose_effect_dynamics(counter_time, current_bp_amplitude)
+            # currently debugging
+            partial_bp_effects[i] = current_bp_amplitude  # self._single_dose_effect_dynamics(counter_time, current_bp_amplitude)
 
         # increase the counter index for every nonzero input, but start at 0 again
         # if all counters have been used (achieved by modulo (%))
