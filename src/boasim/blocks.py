@@ -616,7 +616,7 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
 
     def _generate_effect_dynamics_expr(self):
         r"""
-        Generate a piecewise defined polynomial like: _/‾‾\_ (amplitude 1)
+        Generate a piecewise defined polynomial like: _/‾‾\_ (amplitude 1) ("hat function")
         """
         Ta = 2
         Tb = 4
@@ -638,7 +638,13 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
 
     def rhs(self, k: int, state: List) -> List:
 
-        x1_bp_effect, x2_sensitivity, x3, x4_counter_idx, x5_debug  = self.non_counter_states
+        x1_bp_effect, x2_sensitivity, x3_c_ppf_ib_bp, x4_counter_idx, x5_debug  = self.non_counter_states
+
+        # meanings:
+        # x1_bp_effect      total blood pressure effect
+        # x2_sensitivity    sensitivity \in [1, 1.3], needed for bis
+        # x3_c_ppf_ib_bp    current propofol in blood (blood pressure related, without sens)
+
 
         # the counter should start immediately -> 1 state version
         # create/restore functions for handling the counters
@@ -694,7 +700,7 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
             )
 
             # currently debugging
-            partial_bp_effects[i] = current_bp_amplitude  # self._single_dose_effect_dynamics(counter_time, current_bp_amplitude)
+            partial_bp_effects[i] = self._single_dose_effect_dynamics(counter_time, current_bp_amplitude)
 
         # increase the counter index for every nonzero input, but start at 0 again
         # if all counters have been used (achieved by modulo (%))
@@ -706,9 +712,11 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
 
         # IPS()
         x1_bp_effect_new = sum(partial_bp_effects)
+
+        x3_c_ppf_ib_bp_new = 7 + 0.1*k
         x5_debug_new = sum(partial_bp_effects)
 
-        new_state = [x1_bp_effect_new, x2_bis_sensitivity_new, x3, x4_counter_idx_new, x5_debug_new] + new_counter_states
+        new_state = [x1_bp_effect_new, x2_bis_sensitivity_new, x3_c_ppf_ib_bp_new, x4_counter_idx_new, x5_debug_new] + new_counter_states
 
         return new_state
 
