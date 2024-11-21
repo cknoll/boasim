@@ -576,7 +576,7 @@ class dtAkrinor(new_TDBlock(5 + N_akrinor_counters*2), CounterBlockMixin):
         return self.x1
 
 N_propofol_counters = 3
-class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin, MaxBlockMixin):
+class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin, MaxBlockMixin):
     """
     This block models blood pressure increase due to Propofol bolus doses.
     It uses 1state counters. Each counter, is followed by associated auxiliary values:
@@ -635,21 +635,33 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
         )
         return effect_dynamics_expr
 
-
     def rhs(self, k: int, state: List) -> List:
 
-        x1_bp_effect, x2_sensitivity, x3_c_ppf_ib_bp, x4_counter_idx, x5_debug  = self.non_counter_states
+        (
+            x1_bp_effect,
+            x2_sensitivity,
+            x3_c_ppf_ib_bp,
+            x4_counter_idx,
+            x5_c_ppf_ib_bis,
+            x6_bis_effect,
+            x7_debug,
+        ) = self.non_counter_states
 
         # meanings:
+
         # x1_bp_effect      total blood pressure effect
         # x2_sensitivity    sensitivity \in [1, 1.3], needed for bis
         # x3_c_ppf_ib_bp    current propofol in blood (blood pressure related, without sens)
+        # x5_c_ppf_ib_bis   current propofol in blood (BIS related, without sens)
 
+        # the following state components are not really used (but help development)
+        # x1_bp_effect
+        # x3_c_ppf_ib_bp
+        # x5_c_ppf_ib_bis
 
         # the counter should start immediately -> 1 state version
         # create/restore functions for handling the counters
         counter_func_1state = self._define_counter_func_1state()
-
 
         # TODO: make this better parameterizable
         counter_max_val = self.T_counter/T
@@ -714,11 +726,23 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
         cumulated_dynamic_dose__bp = sum(partial_dynamic_dose__bp)
         x1_bp_effect_new = -1 * self.propofol_bolus_static_values(cumulated_dynamic_dose__bp)*self.reference_bp * 0.5
 
-        # for debugging
         x3_c_ppf_ib_bp_new = cumulated_dynamic_dose__bp
-        x5_debug_new = sum(partial_dynamic_dose__bp)
 
-        new_state = [x1_bp_effect_new, x2_bis_sensitivity_new, x3_c_ppf_ib_bp_new, x4_counter_idx_new, x5_debug_new] + new_counter_states
+        x5_c_ppf_ib_bis_new = 0
+        x6_bis_effect_new = 0
+
+        # for debugging
+        x7_debug_new = sum(partial_dynamic_dose__bp)
+
+        new_state = [
+            x1_bp_effect_new,
+            x2_bis_sensitivity_new,
+            x3_c_ppf_ib_bp_new,
+            x4_counter_idx_new,
+            x5_c_ppf_ib_bis_new,
+            x6_bis_effect_new,
+            x7_debug_new,
+        ] + new_counter_states
 
         return new_state
 
@@ -726,7 +750,6 @@ class dtPropofolBolus(new_TDBlock(5 + 3*N_propofol_counters), CounterBlockMixin,
 
         res = self.bp_effect_dynamics_expr.subs(t, counter_time)*amplitude
         return res
-
 
     def output(self):
         # sensitivity = sp.Piecewise((self.x2, self.x2 > 1), (1, True))
