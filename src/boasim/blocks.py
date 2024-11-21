@@ -599,6 +599,7 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
 
         # this is set via the params-mechanism of TDBlock
         assert isinstance(self.reference_bp, (int, float))
+        assert isinstance(self.reference_bis, (int, float))
 
         # Note: counter is used both for effect and sensitivity
         self.T_counter = 6
@@ -669,19 +670,20 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
 
         new_counter_states = [None]*len(self.counter_states)
         partial_sensitivities = [None]*self.n_counters
-        partial_bis_effects = [None]*self.n_counters
+        partial_dynamic_dose__bis = [None]*self.n_counters
         partial_dynamic_dose__bp = [None]*self.n_counters
 
         # amplitude_func = self._define_amplitude_func() # (self.u1, *self.counter_states)
 
         # the counter-loop
-        # Explanation: For counter index i `self.counter_states[2*i]` is the counter value
-        # and `self.counter_states[2*i + 1]` is the associated amplitude value.
-        # The bis amplitude depends on current input (`self.u1`) and current sensitivity (`x2`)
-        new_bis_amplitude = self.propofol_bolus_static_values(self.u1 * x2_sensitivity)*self.u2
-        # new_bp_amplitude = self.propofol_bolus_static_values(self.u1)*self.reference_bp * 0.5
+        # Explanation: For counter index i `self.counter_states[3*i]` is the counter value
+        # and `self.counter_states[3*i + j]` are the current partial doses (for map (=bp) and bis)
 
-        # it is mostly 0, except when there is a nonzero input
+        # new partial doses are mostly 0, except when there is a nonzero input
+        # The BIS is affected by the sensitivity effect (`x2`)
+        new_partial_dose__bis = self.u1*x2_sensitivity
+
+        # The MAP (bp) is not affected by the sensitivity effect
         new_partial_dose__bp = self.u1
 
         for i in range(self.n_counters):
@@ -697,11 +699,12 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
             current_counter = self.counter_states[3*i]
 
             # calculate the BIS amplitude (`new_counter_states[3*i + 1]`)
-            current_bis_amplitude = self.counter_states[3*i + 1]
+            current_partial_dose__bis = self.counter_states[3*i + 1]
             new_counter_states[3*i + 1] = sp.Piecewise(
-                (new_bis_amplitude, eq(i, x4_counter_idx)), (0,  eq(current_counter, 0)), (current_bis_amplitude, True)
+                (new_partial_dose__bis, eq(i, x4_counter_idx)), (0,  eq(current_counter, 0)), (current_partial_dose__bis, True)
             )
-            partial_bis_effects[i] = self._single_dose_effect_dynamics(counter_time, current_bis_amplitude)
+            partial_dynamic_dose__bis[i] = self._single_dose_effect_dynamics(counter_time, current_partial_dose__bis)
+            # BIS is done
 
             # calculate the BP amplitude (`new_counter_states[3*i + 2]`)
             # Update: this is now only the bp-relevant propofol dose in blood
@@ -711,8 +714,8 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
             new_counter_states[3*i + 2] = sp.Piecewise(
                 (new_partial_dose__bp, eq(i, x4_counter_idx)), (0,  eq(current_counter, 0)), (current_partial_dose__bp, True)
             )
-
             partial_dynamic_dose__bp[i] = self._single_dose_effect_dynamics(counter_time, current_partial_dose__bp)
+            # MAP is done
 
         # increase the counter index for every nonzero input, but start at 0 again
         # if all counters have been used (achieved by modulo (%))
@@ -724,12 +727,17 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
 
         # IPS()
         cumulated_dynamic_dose__bp = sum(partial_dynamic_dose__bp)
-        x1_bp_effect_new = -1 * self.propofol_bolus_static_values(cumulated_dynamic_dose__bp)*self.reference_bp * 0.5
+        cumulated_dynamic_dose__bis = sum(partial_dynamic_dose__bis)
+        x1_bp_effect_new = (
+            -1 * self.propofol_bolus_static_values(cumulated_dynamic_dose__bp) * self.reference_bp * 0.5
+        )
 
         x3_c_ppf_ib_bp_new = cumulated_dynamic_dose__bp
 
-        x5_c_ppf_ib_bis_new = 0
-        x6_bis_effect_new = 0
+        x5_c_ppf_ib_bis_new = cumulated_dynamic_dose__bis
+        x6_bis_effect_new = (
+            -1 * self.propofol_bolus_static_values(cumulated_dynamic_dose__bis) * self.reference_bis
+        )
 
         # for debugging
         x7_debug_new = sum(partial_dynamic_dose__bp)
