@@ -613,11 +613,12 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
             dose, self.propofol_bolus_static_values(dose), modules="numpy"
         )
 
-        self.bp_effect_dynamics_expr = self._generate_effect_dynamics_expr()
+        self.effect_dynamics_expr = self._generate_effect_dynamics_expr()
 
     def _generate_effect_dynamics_expr(self):
         r"""
-        Generate a piecewise defined polynomial like: _/‾‾\_ (amplitude 1) ("hat function")
+        Generate a piecewise defined polynomial like: _/‾‾\_ (amplitude 1) ("hat function").
+        Used for MAP and BIS.
         """
         Ta = 2
         Tb = 4
@@ -756,14 +757,13 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
 
     def _single_dose_effect_dynamics(self, counter_time, amplitude):
 
-        res = self.bp_effect_dynamics_expr.subs(t, counter_time)*amplitude
+        res = self.effect_dynamics_expr.subs(t, counter_time)*amplitude
         return res
 
     def output(self):
-        # sensitivity = sp.Piecewise((self.x2, self.x2 > 1), (1, True))
-        # return sensitivity
+        res = sp.Matrix([self.x1, self.x6])
 
-        return self.x1
+        return res
 
     def propofol_bolus_sensitivity_dynamics(self, t):
         """

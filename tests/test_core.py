@@ -175,7 +175,7 @@ class TestCore(unittest.TestCase):
         params = dict(reference_bp=bp_normal, reference_bis=bis_normal)
 
         pfl = bs.dtPropofolBolus(input1=u_expr_propofol_boli, input2=bp_delay_block.Y, params=params)
-        pbs.td.set_loop_symbol(l1, pfl.Y)
+        pbs.td.set_loop_symbol(l1, pfl.Y[0])
 
         # initial values
         iv = {pfl.x1: 100, pfl.x2: 1}
