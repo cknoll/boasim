@@ -39,3 +39,7 @@ where = ["src"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 version = {attr = "boasim.__version__"}
+
+# this significantly speeds up pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]

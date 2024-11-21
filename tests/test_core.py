@@ -161,6 +161,7 @@ class TestCore(unittest.TestCase):
         t = bs.t
         T = bs.T
         T_end = 10
+        bp_normal = 100
 
         u_expr_propofol_boli = sp.Piecewise((0.5, apx(t, 0)), (1.5, apx(t, 2)), (0, True))
         N_steps = int(T_end/T)
@@ -169,7 +170,10 @@ class TestCore(unittest.TestCase):
         bp_sum  = pbs.td.StaticBlock(output_expr=100 + l1)
         bp_delay_block = pbs.td.dtDelay1(input1=bp_sum.Y)
 
-        pfl = bs.dtPropofolBolus(input1=u_expr_propofol_boli, input2=bp_delay_block.Y)
+
+        params = dict(reference_bp=bp_normal)
+
+        pfl = bs.dtPropofolBolus(input1=u_expr_propofol_boli, input2=bp_delay_block.Y, params=params)
         pbs.td.set_loop_symbol(l1, pfl.Y)
 
         # initial values
