@@ -18,7 +18,7 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         pbs.restart()
 
-    def test_block_10a__DirectionSensitiveSigmoid(self):
+    def test_010__block_10a__DirectionSensitiveSigmoid(self):
 
         T = bs.T
         k = bs.k
@@ -56,7 +56,7 @@ class TestCore(unittest.TestCase):
         # compare lambdify-result and c-result
         self.assertTrue(np.allclose(xx - xx2, 0))
 
-    def test_block_10b__Sufenta(self):
+    def test_020__block_10b__Sufenta(self):
 
         dc = Container()
 
@@ -89,7 +89,7 @@ class TestCore(unittest.TestCase):
         # compare lambdify-result and c-result
         self.assertTrue(np.allclose(xx - xx2, 0))
 
-    def test_block_10c__Akrinor(self):
+    def test_030__block_10c__Akrinor(self):
 
         T1 = 5 # dc.t_cr1
         T2 = 22.5 # dc.t_cr2
@@ -152,7 +152,7 @@ class TestCore(unittest.TestCase):
         # compare lambdify-result and c-result
         self.assertTrue(np.allclose(xx - xx2, 0))
 
-    def test_block_10d__Propofol_bolus(self):
+    def test_040__block_10d__Propofol_bolus(self):
 
         # for debugging warnings:
         # import warnings
@@ -183,6 +183,31 @@ class TestCore(unittest.TestCase):
 
         # again with sympy_to_c
         kk, xx2, bo = pbs.td.blocksimulation(N_steps, iv=iv, rhs_options={"use_sp2c": True})
+
+    def test_050__2D_output(self):
+
+        t_discrete = pbs.td.k*pbs.td.T
+
+        class TwoDOutputBlock(pbs.td.StaticBlock):
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                # create a column vector (one-column matrix)
+                self.output_expr_2d = sp.Matrix([self.output_expr, self.output_expr*2])
+
+            def output(self):
+                return self.output_expr_2d
+
+        static_block_2d  = TwoDOutputBlock(output_expr=sp.sin(sp.pi*t_discrete))
+        bp_delay_block = pbs.td.dtDelay1(input1=static_block_2d.Y[1])
+
+        # initial values
+        iv = {}
+        N_steps = 30
+        kk, xx, bo = pbs.td.blocksimulation(N_steps, iv=iv)
+        self.assertEqual(bo[static_block_2d].shape, (N_steps, 2))
+        self.assertTrue(np.allclose(bo[static_block_2d][0, :], [0, 0]))
+        self.assertTrue(np.allclose(bo[static_block_2d][5, :], [1, 2]))
 
 
 # #################################################################################################
