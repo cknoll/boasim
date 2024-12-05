@@ -56,6 +56,20 @@ class TestCore(unittest.TestCase):
         # compare lambdify-result and c-result
         self.assertTrue(np.allclose(xx - xx2, 0))
 
+    def test_011__PropofolCont(self):
+        t = bs.t
+
+        # taken from original_curves.py
+        params = dict(rr0=100, fp=6, hf0=80)
+        iv = {}
+
+        T_end = 12
+        N_steps = int(T_end/bs.T)
+
+        u_expr_propofol_cont = sp.Piecewise((0, t < 6), (5, t < 12), (0, True))
+        pfl_c = bs.PropofolCont(input1=u_expr_propofol_cont, params=params)
+        kk, xx, bo = pbs.td.blocksimulation(N_steps, iv=iv, rhs_options={"use_sp2c": False})
+
     def test_020__block_10b__Sufenta(self):
 
         dc = Container()
@@ -170,7 +184,6 @@ class TestCore(unittest.TestCase):
         l1 = pbs.td.get_loop_symbol()
         bp_sum  = pbs.td.StaticBlock(output_expr=100 + l1)
         bp_delay_block = pbs.td.dtDelay1(input1=bp_sum.Y)
-
 
         params = dict(reference_bp=bp_normal, reference_bis=bis_normal)
 

@@ -791,3 +791,60 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
         k = -0.34655
         effect_of_medication = 1 - sp.exp(k*dose)
         return effect_of_medication
+
+
+class PropofolCont(dtDirectionSensitiveSigmoid):
+    def _class_specific_params(self):
+        return {
+            "T_trans_pos": 3,
+            "T_trans_neg": 9,
+            "K": 1,
+            "sens": 0.1,  # sensitivity to detect input change
+        }
+
+    def output(self):
+
+        # rr0 = 100 # Ausgangsblutdruck zum Zeitpunkt 0
+        # fp = 6 # Volumenstatus und kardiale Kompensationsfähigkeit: 0 (gut) bis 10 (schlecht)
+
+        res = sp.Matrix([
+            self.rr0 - self.x1*self.fp,  # MAP
+            self.hf0 - self.x1*self.fp   # HR
+        ])
+        return res
+
+"""
+
+u_amplitude = 10
+u_step_time = 1
+T_trans_pos = 3
+T_trans_neg = 9
+T = pbs.td.T
+
+
+
+# bp_static  = pbs.Blockfnc(oc.rr0 - DAPT2.Y*oc.fp)
+# hf_static  = pbs.Blockfnc(oc.hf0 - DAPT2.Y*oc.fp)
+
+
+
+
+
+class HF(pbs.td.dtDirectionSensitiveSigmoid):
+    def output(self):
+        return oc.hf0 - self.x1*oc.fp
+
+params = dict(K=1, T_trans_pos=T_trans_pos, T_trans_neg=T_trans_neg, sens=.1, f_wait_neg=3/9)
+
+u1_expr = sp.Piecewise((0, t < 1), (5, t < T_trans_pos + 2), (8, t < 2*T_trans_pos + 3), (0, True))
+ufunc = st.expr_to_func(t, u1_expr)
+
+# dtsigm_1 = pbs.td.dtSigmoid(input1=u1_expr, params=dict(K=1, T_trans=T_trans, sens=.1))
+
+bp = BP(input1=u1_expr, params=params)
+hf = HF(input1=u1_expr, params=params)
+
+kk, xx, bo = pbs.td.blocksimulation(250)
+
+
+"""
