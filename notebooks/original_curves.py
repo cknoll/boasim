@@ -22,6 +22,7 @@ cp2 = 8
 cp3 = 0
 rr0 = 100 #Ausgangsblutdruck zum Zeitpunkt 0
 fp = 6 #Volumenstatus und kardiale Kompensationsfähigkeit: 0 (gut) bis 10 (schlecht)
+# neue Benennung: k2 realistisches Intervall [2, 10]
 
 
 # verschobene Zeitpunkte

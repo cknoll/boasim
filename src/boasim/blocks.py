@@ -788,8 +788,8 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
         :returns:       effect_of_medication (between 0 and 1)
 
         """
-        k = -0.34655
-        effect_of_medication = 1 - sp.exp(k*dose)
+        k_exp = -0.34655
+        effect_of_medication = 1 - sp.exp(k_exp*dose)
         return effect_of_medication
 
 
@@ -806,10 +806,11 @@ class PropofolCont(dtDirectionSensitiveSigmoid):
 
         # rr0 = 100 # Ausgangsblutdruck zum Zeitpunkt 0
         # fp = 6 # Volumenstatus und kardiale Kompensationsfähigkeit: 0 (gut) bis 10 (schlecht)
+        # -> umbenennen k2 (kontinuierlich)
 
         res = sp.Matrix([
             self.rr0 - self.x1*self.fp,  # MAP
-            self.hf0 - self.x1*self.fp   # HR
+            self.hf0 - self.x1*self.fp   # HR (maybe leave out)
         ])
         return res
 

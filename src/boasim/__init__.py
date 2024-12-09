@@ -11,6 +11,7 @@ try:
 
     from . import core
     from . import blocks
+    from . import utils
 
     # This mechanism serves to simplify the co-development of the package
     # and a jupyter notebook: one reload-statement is then sufficient
@@ -23,12 +24,14 @@ try:
         import importlib as il
         il.reload(core)
         il.reload(blocks)
+        il.reload(utils)
     else:
         # print(f"importing package {__name__}")
         setattr(sys, attr_name, True)
 
     from .core import *
     from .blocks import *
+    from .utils import *
 except ImportError:
     import os
     if "PIP_BUILD_TRACKER" in os.environ:
