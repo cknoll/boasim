@@ -299,8 +299,13 @@ class CounterBlockMixin:
             # check if the counter-loop (i) is considering the counter which should be activated next
             if counter_index_state == i and initial_value > 0:
                 # activate this counter
+                if counter_state != 0:
+                    msg = (
+                        f"Counter {i} (Block {self}) has unexpected value: {counter_state}. "
+                        "Possible reason: Too few counters or too little time between input pulses."
+                    )
+                    raise ValueError(msg)
 
-                assert counter_state == 0
                 return initial_value
             if counter_state > 0:
                 return counter_state - 1
@@ -586,6 +591,7 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
     (also considered part of the counter state components ("counter states"))
 
     """
+    max_blocks_of_this_type = 1
 
     def __init__(self: TDBlock, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -794,6 +800,9 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
 
 
 class PropofolCont(dtDirectionSensitiveSigmoid):
+
+    max_blocks_of_this_type = 1
+
     def _class_specific_params(self):
         return {
             "T_trans_pos": 3,
@@ -809,8 +818,8 @@ class PropofolCont(dtDirectionSensitiveSigmoid):
         # -> umbenennen k2 (kontinuierlich)
 
         res = sp.Matrix([
-            self.rr0 - self.x1*self.fp,  # MAP
-            self.hf0 - self.x1*self.fp   # HR (maybe leave out)
+            - self.x1*self.fp,  # MAP change (absolute)
+            self.rr0 - self.x1*self.fp,  # MAP (assuming no other influence)
         ])
         return res
 

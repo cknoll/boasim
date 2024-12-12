@@ -1,2 +1,8 @@
 - [] implement 2D-output (BIS, BP) for dtPropofolBolus
     - [x] create simple block with 2D output (as unit test)
+- [] combine `dtPropofolBolus` and `PropofolCont`
+    - [] solve counter Problem:
+        - `counter_func_1state(x14, x10, 0, 60.0)`
+        - `counter_func_1state_imp(counter_state, counter_index_state, i, initial_value)`
+        - `k_num = 41`
+        - **problem** 3 counters for 3 overlapping input-signals are not enough
