@@ -276,6 +276,32 @@ class MaxBlockMixin:
         self._implemented_functions["max3_func"] = max3_func
         return max3_func
 
+    def _define_max4_func(self):
+        cached_func = self._implemented_functions.get("max4_func")
+        if cached_func is not None:
+            return cached_func
+
+        def max4_func_imp(a, b, c, d):
+            return max(a, b, c, d)
+
+        max4_func = implemented_function("max3_func", max4_func_imp)
+
+        # the following is necessary for fast implementation in c
+        max4_func.c_implementation = Template("""
+            double max4_func(double a, double b, double c, double d) {
+
+                double max_val = - 1e18;
+                if (a > max_val) { max_val = a; }
+                if (b > max_val) { max_val = b; }
+                if (c > max_val) { max_val = c; }
+                if (d > max_val) { max_val = d; }
+                return max_val;
+            }
+        """).substitute()
+
+        self._implemented_functions["max4_func"] = max4_func
+        return max4_func
+
 
 class CounterBlockMixin:
     def _define_counter_func_1state(self):
@@ -580,7 +606,7 @@ class dtAkrinor(new_TDBlock(5 + N_akrinor_counters*2), CounterBlockMixin):
     def output(self):
         return self.x1
 
-N_propofol_counters = 3
+N_propofol_counters = 4
 class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin, MaxBlockMixin):
     """
     This block models blood pressure increase due to Propofol bolus doses.
@@ -728,9 +754,14 @@ class dtPropofolBolus(new_TDBlock(7 + 3*N_propofol_counters), CounterBlockMixin,
         # if all counters have been used (achieved by modulo (%))
         x4_counter_idx_new = (x4_counter_idx + sp.Piecewise((1, self.u1 > 0), (0, True))) % self.n_counters
 
-        max3_func = self._define_max3_func()
-        assert self.n_counters == 3
-        x2_bis_sensitivity_new = max3_func(*partial_sensitivities)
+        if self.n_counters == 3:
+            max_func = self._define_max3_func()
+        elif self.n_counters == 4:
+            max_func = self._define_max4_func()
+        else:
+            msg = f"unsupported number of counters in block {self}"
+            raise ValueError(msg)
+        x2_bis_sensitivity_new = max_func(*partial_sensitivities)
 
         # IPS()
         cumulated_dynamic_dose__bp = sum(partial_dynamic_dose__bp)
